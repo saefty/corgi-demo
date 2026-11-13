@@ -1,6 +1,7 @@
 import datetime as dt
 import unittest
 
+from library.events import Queue
 from library.loans import Loan, LoanStore
 from library.mailer import Mailer
 from library.reminders import overdue, send_reminders
@@ -15,11 +16,11 @@ class ReminderTest(unittest.TestCase):
         self.store.add(Loan(id=2, member="alan", book="TAOCP", email="alan@example.com", borrowed_on=MARCH_1 - dt.timedelta(days=30)))
 
     def test_reminds_two_days_before_due_once(self):
-        mailer = Mailer()
+        mailer, queue = Mailer(), Queue()
         on = dt.date(2026, 3, 20)  # loan 1 is due on 22 March
-        self.assertEqual(send_reminders(self.store, mailer, on), 1)
+        self.assertEqual(send_reminders(self.store, mailer, queue, on), 1)
         self.assertEqual(mailer.outbox[0]["to"], "ada@example.com")
-        self.assertEqual(send_reminders(self.store, mailer, on), 0)
+        self.assertEqual(send_reminders(self.store, mailer, queue, on), 0)
 
     def test_overdue_lists_the_late_loan(self):
         self.assertEqual([l.id for l in overdue(self.store.open_loans(), dt.date(2026, 3, 20))], [2])
