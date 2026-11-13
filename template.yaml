@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: The library service, two Lambdas and the loan-events queue between them.
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 10
+
+Resources:
+  LoanEvents:
+    Type: AWS::SQS::Queue
+
+  FrontDesk:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: library.handler.handler
+      Environment:
+        Variables:
+          LOAN_EVENTS_URL: !Ref LoanEvents
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LoanEvents.QueueName
+      Events:
+        Api:
+          Type: HttpApi
+
+  ReminderConsumer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: library.consumer.handler
+      Events:
+        Loans:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt LoanEvents.Arn
+            BatchSize: 10

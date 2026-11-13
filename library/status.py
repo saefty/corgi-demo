@@ -1,5 +1,7 @@
-"""A loan's status and the moves allowed between them."""
+"""A loan's status, the moves allowed between them, and the event each move publishes."""
 from enum import Enum
+
+from library.events import LoanEvent
 
 
 class Status(str, Enum):
@@ -33,3 +35,17 @@ def status_of(loan, on):
     if loan.reminded_on is not None:
         return Status.REMINDED
     return Status.BORROWED
+
+
+EVENTS = {Status.REMINDED: "loan.reminded", Status.OVERDUE: "loan.overdue", Status.RETURNED: "loan.returned"}
+
+
+def transition(loan, new, queue, on):
+    """Moves a loan to a new status and publishes the event for it. The only place a status changes."""
+    move(status_of(loan, on), new)
+    if new is Status.REMINDED:
+        loan.reminded_on = on
+    if new is Status.RETURNED:
+        loan.returned_on = on
+    queue.publish(LoanEvent(EVENTS[new], loan.id, on.isoformat()))
+    return new
