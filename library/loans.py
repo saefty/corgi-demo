@@ -13,6 +13,7 @@ class Loan:
     email: str
     borrowed_on: dt.date = field(default_factory=today)
     returned_on: dt.date | None = None
+    reminded_on: dt.date | None = None
 
     @property
     def due_on(self):
